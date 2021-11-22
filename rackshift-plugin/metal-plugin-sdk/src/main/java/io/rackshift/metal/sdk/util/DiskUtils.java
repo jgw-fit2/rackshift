@@ -33,9 +33,9 @@ public class DiskUtils {
                 .replace(" ", "");
 
         double realValue = Double.parseDouble(value);
-        int standardValue = (int) Math.ceil(realValue / 0.931);
+        int standardValue = (int) Math.ceil((realValue / 0.931)* unit.toGB(unit));
 
-        return standardValue * unit.toGB(unit) + " " + Unit.GB.name();
+        return standardValue + " " + Unit.GB.name();
     }
 
 
