@@ -4,12 +4,16 @@ import com.alibaba.fastjson.JSONObject;
 import io.rackshift.constants.MqConstants;
 import io.rackshift.constants.ServiceConstants;
 import io.rackshift.model.WorkflowRequestDTO;
-import io.rackshift.mybatis.domain.Task;
-import io.rackshift.mybatis.domain.TaskWithBLOBs;
+import io.rackshift.mybatis.domain.*;
+import io.rackshift.mybatis.mapper.BareMetalMapper;
+import io.rackshift.mybatis.mapper.SystemParameterMapper;
 import io.rackshift.mybatis.mapper.TaskMapper;
+import io.rackshift.mybatis.mapper.WorkflowMapper;
+import io.rackshift.service.OutBandService;
 import io.rackshift.strategy.statemachine.LifeEvent;
 import io.rackshift.strategy.statemachine.LifeEventType;
 import io.rackshift.strategy.statemachine.StateMachine;
+import io.rackshift.utils.JSONUtils;
 import io.rackshift.utils.MqUtil;
 import io.rackshift.utils.SpringUtils;
 import org.springframework.amqp.core.Message;
@@ -355,6 +359,15 @@ public abstract class BaseJob {
         taskMapper.updateByPrimaryKeyWithBLOBs(this.task);
     }
 
+    protected void updateAllOptions(JSONObject options) {
+        JSONObject graphObjects = JSONObject.parseObject(this.task.getGraphObjects());
+        for (String k : graphObjects.keySet()) {
+            graphObjects.getJSONObject(k).put("options", JSONUtils.merge(options, graphObjects.getJSONObject(k).getJSONObject("options")));
+        }
+        this.task.setGraphObjects(graphObjects.toJSONString());
+        taskMapper.updateByPrimaryKeyWithBLOBs(this.task);
+    }
+
     public void cancel() {
         if (ServiceConstants.RackHDTaskStatusEnum.pending.name().equalsIgnoreCase(this._status)) {
             JSONObject task = getTaskByInstanceId(instanceId);
@@ -431,8 +444,32 @@ public abstract class BaseJob {
                 setTask(task);
                 JSONObject result = new JSONObject();
                 result.put("result", true);
-                sendBMLifecycleEvent(LifeEventType.POST_OTHER_WORKFLOW_END, result);
+                Workflow w = applicationContext.getBean(WorkflowMapper.class).selectByPrimaryKey(this.task.getWorkFlowId());
+                //
+                if (w == null) return;
+                if (w.getInjectableName().contains("Graph.Install")) {
+                    sendBMLifecycleEvent(LifeEventType.POST_OS_WORKFLOW_END, result);
+                } else if (w.getInjectableName().equalsIgnoreCase("Graph.rancherDiscovery")) {
+                    sendBMLifecycleEvent(LifeEventType.POST_DISCOVERY_WORKFLOW_END, result);
+                    generateOutband();
+                } else {
+                    sendBMLifecycleEvent(LifeEventType.POST_OTHER_WORKFLOW_END, result);
+                }
             }
+        }
+    }
+
+    private void generateOutband() {
+        SystemParameter createCredential = applicationContext.getBean(SystemParameterMapper.class).selectByPrimaryKey("bmc_credentials");
+        String userName = Optional.ofNullable(applicationContext.getBean(SystemParameterMapper.class).selectByPrimaryKey("bmc_username")).orElse(new SystemParameter()).getParamValue();
+        String password = Optional.ofNullable(applicationContext.getBean(SystemParameterMapper.class).selectByPrimaryKey("bmc_password")).orElse(new SystemParameter()).getParamValue();
+        if (createCredential != null && Boolean.TRUE.toString().equalsIgnoreCase(createCredential.getParamValue())) {
+            OutBand outBand = new OutBand();
+            outBand.setIp(Optional.ofNullable(applicationContext.getBean(BareMetalMapper.class).selectByPrimaryKey(bareMetalId)).orElse(new BareMetal()).getManagementIp());
+            outBand.setUserName(Optional.ofNullable(userName).orElse("rackshift"));
+            outBand.setPwd(Optional.ofNullable(password).orElse("rackshift"));
+            outBand.setBareMetalId(bareMetalId);
+            applicationContext.getBean(OutBandService.class).saveOrUpdate(outBand, false);
         }
     }
 
@@ -451,12 +488,18 @@ public abstract class BaseJob {
             task.put("state", ServiceConstants.RackHDTaskStatusEnum.failed.name());
             task.put("error", e.getMessage());
             this._status = ServiceConstants.RackHDTaskStatusEnum.failed.name();
-            this.task.setStatus(ServiceConstants.TaskStatusEnum.failed.name());
-            setTask(task);
-            deleteQueue();
-            JSONObject result = new JSONObject();
-            result.put("result", false);
-            sendBMLifecycleEvent(LifeEventType.POST_OTHER_WORKFLOW_END, result);
+            //compatible with ignoreFailure
+            if (context.containsKey("ignoreFailure") || context.getBooleanValue("ignoreFailure")) {
+                setTask(task);
+                nextTask(ServiceConstants.RackHDTaskStatusEnum.finished.name());
+            } else {
+                this.task.setStatus(ServiceConstants.TaskStatusEnum.failed.name());
+                deleteQueue();
+                JSONObject result = new JSONObject();
+                result.put("result", false);
+                sendBMLifecycleEvent(LifeEventType.POST_OTHER_WORKFLOW_END, result);
+                setTask(task);
+            }
         }
     }
 

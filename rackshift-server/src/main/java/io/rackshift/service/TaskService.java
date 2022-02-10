@@ -19,9 +19,7 @@ import io.rackshift.strategy.statemachine.*;
 import io.rackshift.utils.*;
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.ibatis.type.Alias;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
@@ -59,6 +57,11 @@ public class TaskService {
     private HoganService hoganService;
     @Resource
     private AbstractHandler abstractHandler;
+    private static List<String> endStatus = new ArrayList<String>() {{
+        add(ServiceConstants.TaskStatusEnum.failed.name());
+        add(ServiceConstants.TaskStatusEnum.cancelled.name());
+        add(ServiceConstants.TaskStatusEnum.succeeded.name());
+    }};
 
     private List<String> runningStatus = new ArrayList<String>() {{
         add(ServiceConstants.TaskStatusEnum.created.name());
@@ -82,7 +85,17 @@ public class TaskService {
         Task task = taskMapper.selectByPrimaryKey(id);
         if (task == null) return false;
         if (bareMetalManager.getBareMetalById(task.getBareMetalId()) == null || StringUtils.isBlank(task.getInstanceId())) {
-            failTask(task);
+            Workflow workflow = workflowService.getById(task.getWorkFlowId());
+            if (workflow != null && workflow.getInjectableName().equalsIgnoreCase("Graph.rancherDiscovery")) {
+                BareMetal bareMetal = bareMetalManager.getBareMetalById(task.getBareMetalId());
+                if (bareMetal != null) {
+                    bareMetalManager.delBareMetalById(bareMetal.getId());
+                }
+            } else {
+                if (!endStatus.contains(task.getStatus())) {
+                    failTask(task);
+                }
+            }
             taskMapper.deleteByPrimaryKey(id);
             try {
                 MqUtil.request(MqConstants.EXCHANGE_NAME, MqConstants.MQ_ROUTINGKEY_DELETION + task.getBareMetalId(), "");
@@ -163,11 +176,11 @@ public class TaskService {
                 JSONObject taskObj = null;
                 JSONObject baseTaskObj = null;
                 if (StringUtils.isNotBlank(taskName)) {
-                    taskObj = (JSONObject) JSONObject.toJSON(taskObject.get(taskName));
-                    baseTaskObj = (JSONObject) JSONObject.toJSON(baseTask.get(taskObj.getString("implementsTask")));
+                    taskObj = JSONObject.parseObject(JSONObject.toJSONString(taskObject.get(taskName)));
+                    baseTaskObj = JSONObject.parseObject(JSONObject.toJSONString(baseTask.get(taskObj.getString("implementsTask"))));
                 } else if (task.getJSONObject("taskDefinition") != null) {
                     taskObj = task.getJSONObject("taskDefinition");
-                    baseTaskObj = (JSONObject) JSONObject.toJSON(baseTask.get(taskObj.getString("implementsTask")));
+                    baseTaskObj = JSONObject.parseObject(JSONObject.toJSONString(baseTask.get(taskObj.getString("implementsTask"))));
                 }
                 JSONObject finalTaskObj = taskObj;
                 taskObj.keySet().forEach(k -> {
@@ -178,9 +191,9 @@ public class TaskService {
                 task.put("state", ServiceConstants.RackHDTaskStatusEnum.pending.name());
                 task.put("taskStartTime", LocalDateTime.now());
                 if (task.getJSONObject("options") == null) {
-                    task.put("options", extract(workflowName, e.getWorkflowRequestDTO().getParams(), taskFName));
+                    task.put("options", extract(e.getWorkflowRequestDTO().getParams(), taskFName));
                 } else {
-                    JSONObject userOptions = extract(workflowName, e.getWorkflowRequestDTO().getParams(), taskFName);
+                    JSONObject userOptions = extract(e.getWorkflowRequestDTO().getParams(), taskFName);
                     JSONObject options = task.getJSONObject("options");
                     if (userOptions != null)
                         userOptions.keySet().forEach(k -> {
@@ -230,11 +243,15 @@ public class TaskService {
                 Matcher m = p.matcher(optionStr);
                 while (m.find()) {
                     if (m.group(1).contains("options")) {
-                        optionStr = optionStr.replace(m.group(), thisOptions.get(m.group(1).trim().replace("options.", "")));
+                        if (StringUtils.isNotBlank(thisOptions.get(m.group(1).trim().replace("options.", "")))) {
+                            optionStr = optionStr.replace(m.group(), thisOptions.get(m.group(1).trim().replace("options.", "")));
+                        }
                     } else if (m.group(1).contains("task.nodeId")) {
                         optionStr = optionStr.replace(m.group(), task.getString("bareMetalId"));
                     } else {
-                        optionStr = optionStr.replace(m.group(), renderOptions.get(m.group(1).trim()));
+                        if (StringUtils.isNotBlank(renderOptions.get(m.group(1).trim()))) {
+                            optionStr = optionStr.replace(m.group(), renderOptions.get(m.group(1).trim()));
+                        }
                     }
                 }
             }
@@ -256,12 +273,11 @@ public class TaskService {
     /**
      * 从参数里面获取参数对应的标签名称
      *
-     * @param workflowName
      * @param params
      * @param label
      * @return
      */
-    private JSONObject extract(String workflowName, JSONObject params, String label) {
+    private JSONObject extract(JSONObject params, String label) {
         if (params != null && params.containsKey("options")) {
             JSONObject options = params.getJSONObject("options");
             JSONObject p = options.getJSONObject(label);
@@ -299,6 +315,12 @@ public class TaskService {
     public int delByBareMetalId(String id) {
         TaskExample e = new TaskExample();
         e.createCriteria().andBareMetalIdEqualTo(id);
+        if (taskMapper.selectByExample(e).stream().filter(t -> t.getStatus().equalsIgnoreCase(ServiceConstants.TaskStatusEnum.running.name())).findFirst().isPresent())
+            try {
+                MqUtil.request(MqConstants.EXCHANGE_NAME, MqConstants.MQ_ROUTINGKEY_DELETION + id, "");
+            } catch (Exception e1) {
+                LogUtil.error(String.format("delete queue failed!%s", id));
+            }
         return taskMapper.deleteByExample(e);
     }
 
@@ -371,15 +393,31 @@ public class TaskService {
             return null;
         }
         Map<String, Object> r = new HashMap<>();
-        r.put("profile", MqUtil.request(MqConstants.EXCHANGE_NAME, MqConstants.MQ_ROUTINGKEY_PROFILES + id, ""));
-        r.put("options", MqUtil.request(MqConstants.EXCHANGE_NAME, MqConstants.MQ_ROUTINGKEY_OPTIONS + id, ""));
-        r.put("macaddress", bareMetalManager.getBareMetalById(id).getPxeMac());
+        try {
+            String profile = MqUtil.request(MqConstants.EXCHANGE_NAME, MqConstants.MQ_ROUTINGKEY_PROFILES + id, "");
+            String options = MqUtil.request(MqConstants.EXCHANGE_NAME, MqConstants.MQ_ROUTINGKEY_OPTIONS + id, "");
+            if (!"no".equals(profile)) {
+                r.put("profile", profile);
+            }
+            if (!"no".equals(options)) {
+                r.put("options", options);
+            }
+            r.put("macaddress", bareMetalManager.getBareMetalById(id).getPxeMac());
+        } catch (Exception e1) {
+
+        }
         return r;
     }
 
     public List<Task> getActiveTasks(String bareMetalId) {
         TaskExample e = new TaskExample();
         e.createCriteria().andBareMetalIdEqualTo(bareMetalId).andStatusEqualTo(ServiceConstants.TaskStatusEnum.running.name());
+        return taskMapper.selectByExample(e);
+    }
+
+    public List<Task> getActiveTasks() {
+        TaskExample e = new TaskExample();
+        e.createCriteria().andStatusEqualTo(ServiceConstants.TaskStatusEnum.running.name());
         return taskMapper.selectByExample(e);
     }
 }

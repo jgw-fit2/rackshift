@@ -165,7 +165,7 @@ export default {
     "sync_status": "同步狀態",
     "pls_input_username": "請輸入用護名",
     "pwd": "密碼",
-    "Subnet": "子網",
+    "Subnet": "DHCP 子網",
     "add_success": "添加成功",
     "view_execution_log": "查看部署日誌",
     "status": "狀態",
@@ -451,7 +451,7 @@ export default {
     "netmask_validate_error": "子網掩碼不合法！",
     "i18n_yigou_disk": " 組存在異構磁盤（比如機械和固態），不能創建 RAID!",
     "COMPLETE": "完成",
-    "not_discoveryed": "未完成主動發現，請執行對服務器進行 PXE重啟！再執行工作流！",
+    "not_discoveryed": "未完成主動發現蒐集其 PXE MAC 地址，請執行對服務器進行 PXE重啟！再執行工作流！",
     "is_pxe": "PXE 網卡",
     "true": "是",
     "false": "否",
@@ -536,5 +536,9 @@ export default {
     "mount_text": "默認 http 服務器掛載地址在 /opt/rackshift/rackhd/files/mount/common，也可以直接使用其他第三方 http 服務器",
     "i18n_lvmname_null": "LVM 卷名不能為空",
     "no_param": "參數不存在",
-    "pxe_mac": "PXE MAC"
+    "pxe_mac": "PXE MAC",
+    "remark": "備注",
+    "why": "爲什麽？",
+    "pxe_desc": "裝機平台以網卡的 MAC 地址為唯一標識，對 PXE 中的物理機進行區分以實現不同機器不同引導流程",
+    "not_required": "(非必選，需要自定義腳本時可選擇)",
 }

@@ -12,7 +12,7 @@ module.exports = {
         'finish-bootstrap-trigger': {
             'triggerGroup': 'bootstrap'
         },
-        'skip-reboot-post-discovery' : {
+        'skip-reboot-post-discovery': {
             skipReboot: 'false',
             when: '{{options.skipReboot}}'
         }
@@ -34,10 +34,35 @@ module.exports = {
             }
         },
         {
+            label: 'generate-pass',
+            taskDefinition: {
+                friendlyName: 'Generate BMC Password',
+                injectableName: 'Task.Generate.BMC.Password',
+                implementsTask: 'Task.Base.Generate.Password',
+                properties: {},
+                options: {
+                    user: null
+
+                }
+            },
+            waitOn: {
+                'catalog-ohai': 'finished'
+            },
+            ignoreFailure: true
+        },
+        {
+            label: 'set-bmc',
+            taskName: 'Task.Set.BMC.Credentials',
+            waitOn: {
+                'generate-pass': 'succeeded'
+            },
+            ignoreFailure: true
+        },
+        {
             label: 'catalog-bmc',
             taskName: 'Task.Catalog.bmc',
             waitOn: {
-                'catalog-ohai': 'finished'
+                'set-bmc': 'finished'
             },
             ignoreFailure: true
         },
@@ -125,8 +150,9 @@ module.exports = {
                 "properties": {}
             },
             waitOn: {
-               'catalog-lldp': 'finished'
-            }
+                'catalog-lldp': 'finished'
+            },
+            ignoreFailure: true
         },
         {
             label: 'skip-reboot-post-discovery',
@@ -141,28 +167,32 @@ module.exports = {
             taskName: 'Task.ProcShellReboot',
             waitOn: {
                 'skip-reboot-post-discovery': 'failed'
-            }
+            },
+            ignoreFailure: true
         },
         {
             label: 'noop',
             taskName: 'Task.noop',
             waitOn: {
                 'skip-reboot-post-discovery': 'succeeded'
-            }
+            },
+            ignoreFailure: true
         },
         {
             label: 'finish-bootstrap-trigger',
             taskName: 'Task.Trigger.Send.Finish',
             waitOn: {
                 'set-boot-pxe': 'finished'
-            }
+            },
+            ignoreFailure: true
         },
         {
             label: 'node-discovered-alert',
             taskName: 'Task.Alert.Node.Discovered',
             waitOn: {
                 'finish-bootstrap-trigger': 'finished'
-            }
+            },
+            ignoreFailure: true
         }
     ]
 };

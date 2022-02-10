@@ -3,7 +3,7 @@ name: upload release asset
 on:
   create:
     tag:
-      - "v1.6.0"
+      - "v1.7.1"
 
 jobs:
   build:
@@ -48,14 +48,22 @@ jobs:
             sh -c "$(curl -sSL https://github.com/rackshift/rackshift/releases/latest/download/quick_start.sh)"
             ```
 
-            ## 重构
-            - 重写了装机引擎
-            - 去掉了 RackHD 的服务依赖，减小了一半安装包体积
+            ## 新增
+            - 联想 WEBKVM
+            - 支持添加单台裸金属
+            - 支持给裸金属备注
+            - 增加是否检查网络连通开关
+            - 支持 CentOS6.X 装机
+
+            ## 修复
+            - IP 排序问题
+            - 日志打印过多
+            - websocket 卡死
 
             # 产品文档
             点击 [完整文档](https://rackshift.io) 查看完整的安装和使用文档
             # 离线安装包
-            [离线安装包下载地址](https://community.fit2cloud.com/#/download/rackshift/v1-6-0)
+            [离线安装包下载地址](https://community.fit2cloud.com/#/download/rackshift/v1-7-1)
 
       - name: Upload Release Asset
         id: upload-release-asset

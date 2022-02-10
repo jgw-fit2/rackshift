@@ -88,7 +88,11 @@ public class CatalogParser {
             physicalMachine.setIpArray(jsonArray.toString());
         }
         //新发现的一律设置为未知 只有填写好带外信息 能定时获取到状态到才有该字段
-        physicalMachine.setPower(getPmPower(machineEntity.getBmcIp()));
+        try {
+            physicalMachine.setPower(getPmPower(machineEntity.getBmcIp()));
+        } catch (Exception e) {
+            LogUtil.error("获取 power 失败！" + JSONObject.toJSONString(e));
+        }
         return physicalMachine;
     }
 
@@ -215,6 +219,9 @@ public class CatalogParser {
                     if ("Inspur".equalsIgnoreCase(en.getBrand())) {
                         en.setSerialNo(dmi.getJSONObject("System Information").getString("Serial Number"));
                     }
+                }
+                if (StringUtils.equalsIgnoreCase("N/A", en.getSerialNo())) {
+                    en.setSerialNo(dmi.getJSONObject("System Information").getString("Serial Number"));
                 }
                 if (StringUtils.isBlank(en.getModel())) {
                     en.setModel(dmi.getJSONObject("System Information").getString("Product Name"));

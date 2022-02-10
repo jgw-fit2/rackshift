@@ -17,7 +17,11 @@ public class ConfigurationUtil {
             Iterator<String> keys = config.getKeys();
             while (keys.hasNext()) {
                 String k = keys.next();
-                ConsoleUtil.log("key: " + k + " value: " + config.getString(k));
+                if (k.equalsIgnoreCase("spring.datasource.password")) {
+                    ConsoleUtil.log("key: " + k + " value: ******");
+                } else {
+                    ConsoleUtil.log("key: " + k + " value: " + config.getString(k));
+                }
             }
         } catch (ConfigurationException e) {
             ConsoleUtil.log("Cannot find " + ConfigConstants.CONFIG_FILE);
@@ -27,6 +31,10 @@ public class ConfigurationUtil {
 
     public static String getConfig(String key, String defaultS) {
         return Optional.ofNullable(config.getString(key)).orElse(defaultS);
+    }
+
+    public static String[] getConfigs(String key, String defaultS) {
+        return Optional.ofNullable(config.getString(key).split(",")).orElse(new String[]{defaultS});
     }
 
 }

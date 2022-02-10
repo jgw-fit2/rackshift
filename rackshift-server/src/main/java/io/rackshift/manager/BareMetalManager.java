@@ -6,7 +6,6 @@ import io.rackshift.mybatis.domain.*;
 import io.rackshift.mybatis.mapper.*;
 import io.rackshift.mybatis.mapper.ext.ExtNetworkCardMapper;
 import io.rackshift.service.EndpointService;
-import io.rackshift.service.RackHDService;
 import io.rackshift.strategy.statemachine.LifeStatus;
 import io.rackshift.utils.BeanUtils;
 import io.rackshift.utils.ExceptionUtils;
@@ -124,6 +123,10 @@ public class BareMetalManager {
         bareMetalMapper.updateByPrimaryKey(bareMetal);
     }
 
+    public void updateByPrimaryKeySelective(BareMetal bareMetal) {
+        bareMetalMapper.updateByPrimaryKeySelective(bareMetal);
+    }
+
     public BareMetal saveOrUpdateEntity(MachineEntity e) {
         if (StringUtils.isAllBlank(e.getPxeMac(), e.getSerialNo())) {
             return null;
@@ -138,6 +141,7 @@ public class BareMetalManager {
             if (dbBareMetal == null) {
                 bareMetalMapper.insertSelective(bareMetal);
             } else {
+                bareMetal.setId(dbBareMetal.getId());
                 removeDuplicate(bareMetal);
                 update(bareMetal, true);
             }
@@ -261,6 +265,7 @@ public class BareMetalManager {
             example.or(example.createCriteria().andMachineSnLike(likeClause));
             example.or(example.createCriteria().andManagementIpLike(likeClause));
             example.or(example.createCriteria().andRuleIdEqualTo(queryVO.getSearchKey()));
+            example.or(example.createCriteria().andRemarkLike(likeClause));
         }
         return example;
     }

@@ -1,6 +1,7 @@
 package io.rackshift.config;
 
 import com.alibaba.fastjson.JSONObject;
+import io.rackshift.constants.ServiceConstants;
 import io.rackshift.engine.model.BaseTask;
 import io.rackshift.engine.model.BaseTaskGraph;
 import io.rackshift.engine.model.BaseTaskObject;
@@ -87,11 +88,9 @@ public class WorkflowConfig {
         Set<Map.Entry<String, BaseTaskGraph>> baseTasks = taskGraph().entrySet();
         baseTasks.forEach(baseTaskGraph -> {
             WorkflowWithBLOBs w = workflowService.getByInjectableName(baseTaskGraph.getValue().getInjectableName());
-            if (w != null) {
-                if (StringUtils.isBlank(w.getTasks())) {
-                    w.setTasks(baseTaskGraph.getValue().getTasks().toJSONString());
-                }
-                if (StringUtils.isBlank(w.getOptions()) && baseTaskGraph.getValue().getOptions() != null) {
+            if (w != null && w.getType().equalsIgnoreCase(ServiceConstants.TYPE_SYS)) {
+                w.setTasks(baseTaskGraph.getValue().getTasks().toJSONString());
+                if (baseTaskGraph.getValue().getOptions() != null) {
                     w.setOptions(baseTaskGraph.getValue().getOptions().toJSONString());
                 }
                 workflowService.update(w);

@@ -3,6 +3,7 @@
     <el-tab-pane :label="$t('Bare Metal Server')" name="bare-metal">
       <div class="machine-title2">
         <el-button-group class="batch-button">
+          <el-button type="primary" icon="el-icon-circle-plus-outline" @click="openAdd">{{ $t('add') }}</el-button>
           <el-button type="primary" icon="el-icon-delete" @click="delAllSelection">{{ $t('del') }}
           </el-button>
           <el-button type="primary" icon="el-icon-refresh" @click="getData">{{ $t('refresh') }}</el-button>
@@ -46,7 +47,7 @@
       >
         <el-table-column type="selection" align="left"></el-table-column>
 
-        <el-table-column prop="pxe_mac" :label="$t('pxe_mac')" align="left"  width="140"
+        <el-table-column prop="pxe_mac" :label="$t('pxe_mac')" align="left" width="140"
                          sortable="custom">
           <template slot-scope="scope">
             {{ scope.row.pxeMac }}
@@ -71,15 +72,14 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="management_ip" :label="$t('management_ip')" align="left"
+        <el-table-column prop="inet_aton(management_ip)" :label="$t('management_ip')" align="left"
                          sortable="custom">
           <template slot-scope="scope">
             {{ scope.row.managementIp }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="ip_array" :label="$t('IP')" align="left"
-                         sortable="custom">
+        <el-table-column prop="ip_array" :label="$t('IP')" align="left">
           <template slot-scope="scope">
             {{ scope.row.ipArray }}
           </template>
@@ -97,6 +97,12 @@
           <template slot-scope="scope">
             <i class="el-icon-loading" v-if="scope.row.status && scope.row.status.indexOf('ing') != -1"></i>
             <span v-html="statusFilter(scope.row)"></span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="remark" :label="$t('remark')" align="left">
+          <template slot-scope="scope">
+            <Remark :cur-obj="scope.row"></Remark>
           </template>
         </el-table-column>
 
@@ -536,7 +542,7 @@
                 </el-col>
 
                 <el-col :span="10">
-                  {{ w.machineModel + ' ' + w.machineSn }}
+                  {{ w.machineModel ? (w.machineModel + ' ' + w.machineSn) : w.pxeMac }}
                   <br>
                   {{ w.friendlyNameInternational }}
                 </el-col>
@@ -590,6 +596,8 @@
         </div>
       </template>
     </el-dialog>
+
+    <AddBareMetal ref="addBareMetal" @confirm="getData"></AddBareMetal>
   </el-tabs>
 </template>
 
@@ -608,6 +616,8 @@ import bus from '../../common/bus/bus'
 import {paramMap, isInherit} from '../../rackparams/params'
 import {ipValidator, maskValidator, requiredValidator} from "@/common/validator/CommonValidator";
 import RSCodeMirror from "@/common/script/RSCodeMirror";
+import AddBareMetal from "@/components/bare-metal/AddBareMetal";
+import Remark from "@/components/bare-metal/Remark";
 
 Vue.filter('statusFilter', function (row) {
   return i18n.t('PXE') + ' ' + i18n.t(row.status);
@@ -760,7 +770,7 @@ export default {
   },
   components: {
     RSCodeMirror,
-    OBM, Discovery, PowerStatus
+    OBM, Discovery, PowerStatus, AddBareMetal, Remark
   },
   computed: {},
   destroyed() {
@@ -775,15 +785,6 @@ export default {
     if (!this.websocket) {
       this.websocket = new WebSocketUtil();
       this.websocket.openSocket('lifecycle', this.notify);
-      let that = this;
-      this.websocketInterval = setInterval(function () {
-        try {
-          that.websocket.sendMessage("hello");
-        } catch (e) {
-          sessionStorage.removeItem("rsSocket");
-          that.websocket.openSocket('lifecycle', that.notify);
-        }
-      }, 3000);
       this.getData();
     }
     this.getAllGraphDefinitions();
@@ -791,6 +792,9 @@ export default {
   }
   ,
   methods: {
+    openAdd() {
+      this.$refs.addBareMetal.open();
+    },
     receiveValue(val) {
       this.bp.postInstallCommands = val;
     },
@@ -1471,13 +1475,6 @@ export default {
         this.$message.error(this.$t('pls_select_workflow') + "!");
         return;
       }
-      for (let i = 0; i < this.selectedWorkflow.length; i++) {
-        let obj = _.find(this.tableData, (o) => o.id == this.selectedWorkflow[i].bareMetalId);
-        if (!obj.outBandList.length) {
-          this.$message.error(obj.machineModel + '' + obj.machineSn + ' ' + this.$t('obm_not_exists') + "!");
-          return;
-        }
-      }
       let that = this;
       let reqList = _.map(this.copy(this.selectedWorkflow), (wf) => {
         return that.buildRequest(wf);
@@ -1555,7 +1552,7 @@ export default {
           }
 
           if (duplicated) continue;
-          if (_.findIndex(originWf.brands, w => w == that.multipleSelection[k].machineBrand) == -1) {
+          if (that.multipleSelection[k].machineBrand && _.findIndex(originWf.brands, w => w == that.multipleSelection[k].machineBrand) == -1) {
             that.$message.error(originWf.friendlyName + that.$t('not_supported_brand!') + ' ' + that.multipleSelection[k].machineBrand);
             continue;
           }
@@ -1564,7 +1561,9 @@ export default {
           let extraParams = null;
           if (that.workflowParamList.length) {
             let paramTemplate = _.find(that.workflowParamList, function (p) {
-              return p.bareMetalId == that.multipleSelection[k].id;
+              if (p.workflowId)
+                return p.bareMetalId == that.multipleSelection[k].id && p.workflowId == that.getWorkflowById().id;
+              return false;
             });
             if (paramTemplate == null) {
               params = _.cloneDeep(originWf.defaultParams);

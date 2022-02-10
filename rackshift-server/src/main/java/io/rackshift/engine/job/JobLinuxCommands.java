@@ -2,7 +2,6 @@ package io.rackshift.engine.job;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import io.rackshift.constants.ServiceConstants;
 import io.rackshift.model.RSException;
 import io.rackshift.mybatis.mapper.TaskMapper;
 import io.rackshift.utils.JSONUtils;
@@ -44,6 +43,15 @@ public class JobLinuxCommands extends BaseJob {
 
     @Override
     public void run() {
+        //支持直接跳过执行命令的子任务提高效率
+        if (context.getString("label").equalsIgnoreCase(options.getString("jumpTask"))) {
+            JSONObject thisTask = getTaskByInstanceId(instanceId);
+            thisTask.put("info", String.format("jump this task : %s", options.getString("jumpTask")));
+            setTask(thisTask);
+            this.complete();
+            return;
+        }
+
         JSONObject r = new JSONObject();
         r.put("identifier", bareMetalId);
         this.subscribeForRequestCommand((o) -> {
@@ -76,20 +84,9 @@ public class JobLinuxCommands extends BaseJob {
         List<Integer> acceptResponseCode = new ArrayList<Integer>();
         acceptResponseCode.add(1);
         this.subscribeForCompleteCommands(o -> {
-//            JSONArray tasksArr = JSONArray.parseArray((String) o);
-//            for (int i = 0; i < tasksArr.size(); i++) {
-//                JSONObject t = tasksArr.getJSONObject(i);
-//                if (t.getJSONObject("error") != null && !acceptResponseCode.contains(t.getJSONObject("error").getInteger("code"))) {
-//                    this.error(new RSException(t.getJSONObject("error").toJSONString()));
-//                }
-//            }
-//            if (!this._status.equalsIgnoreCase(ServiceConstants.TaskStatusEnum.failed.name())) {
-//                this.complete();
-//            }
-            //还没调通先直接成功好了
-            if(StringUtils.isNotBlank((String)o) && ((String) o).contains("error")){
-                this.error(new RSException((String)o));
-            }else {
+            if (StringUtils.isNotBlank((String) o) && ((String) o).contains("error")) {
+                this.error(new RSException((String) o));
+            } else {
                 this.complete();
             }
             return "ok";

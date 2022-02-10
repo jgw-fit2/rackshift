@@ -3,13 +3,12 @@ package io.rackshift.dhcpproxy.util;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.rackshift.dhcpproxy.constants.ConfigConstants;
 import io.rackshift.dhcpproxy.constants.DHCPProtocolConstants;
+import org.apache.commons.lang.StringUtils;
 
 import java.nio.charset.Charset;
-
-import io.netty.buffer.*;
-import org.apache.commons.lang.StringUtils;
 
 public class DHCPPacketParser {
 
@@ -201,9 +200,16 @@ public class DHCPPacketParser {
         packet.put("fname", bootFileName);
 
         // Necessary, at least on vbox
-        packet.put("siaddr", ConfigurationUtil.getConfig(ConfigConstants.TFTP_URL, "172.31.128.1"));
-        // Not necessary, at least on vbox, but perhaps other clients will require these fields?
-        packet.put("sname", ConfigurationUtil.getConfig(ConfigConstants.TFTP_URL, "172.31.128.1"));
+        //support multiple net segment
+        String ciaddr = packet.getString("ciaddr");
+        String[] nextServers = ConfigurationUtil.getConfigs(ConfigConstants.TFTP_URL, "172.31.128.1");
+        for (String nextServer : nextServers) {
+            if (IPUtils.isInRange(ciaddr, nextServer + "/24")) {
+                packet.put("siaddr", nextServer);
+                // Not necessary, at least on vbox, but perhaps other clients will require these fields?
+                packet.put("sname", nextServer);
+            }
+        }
 
         //EFI PXE listen on a different port => tell the server
         if ((dhcpPackets.getJSONObject("options").getString("userClass") == null) &&

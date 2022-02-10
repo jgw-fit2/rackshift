@@ -50,6 +50,7 @@ public class IPMIUtil {
                 while ((line = b.readLine()) != null) {
                     sb.append(line + "\n");
                 }
+                p.waitFor();
                 p.getInputStream().close();
                 re.close();
                 b.close();
@@ -188,6 +189,7 @@ public class IPMIUtil {
                 "Attempt Count Reset Int.: 0\n" +
                 "User Lockout Interval   : 0"));
     }
+
     public static class Account {
         String host;
         String userName;

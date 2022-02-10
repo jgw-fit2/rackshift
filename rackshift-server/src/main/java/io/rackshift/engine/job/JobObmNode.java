@@ -1,8 +1,11 @@
 package io.rackshift.engine.job;
 
 import com.alibaba.fastjson.JSONObject;
+import io.rackshift.constants.RackHDConstants;
 import io.rackshift.model.RSException;
+import io.rackshift.mybatis.domain.CatalogExample;
 import io.rackshift.mybatis.domain.OutBand;
+import io.rackshift.mybatis.mapper.CatalogMapper;
 import io.rackshift.mybatis.mapper.TaskMapper;
 import io.rackshift.service.OutBandService;
 import io.rackshift.utils.IPMIUtil;
@@ -60,8 +63,17 @@ public class JobObmNode extends BaseJob {
         private void run() throws Exception {
             OutBandService outBandService = (OutBandService) applicationContext.getBean("outBandService");
             OutBand outBand = outBandService.getByBareMetalId(bareMetalId);
+            CatalogMapper catalogMapper = applicationContext.getBean(CatalogMapper.class);
+            CatalogExample ce = new CatalogExample();
+            ce.createCriteria().andBareMetalIdEqualTo(bareMetalId).andSourceEqualTo("bmc");
             if (outBand == null) {
-                RSException.throwExceptions("no obm info set!");
+                if (catalogMapper.countByExample(ce) > 0) {
+                    //has bmc
+                    RSException.throwExceptions("no obm info set!");
+                } else {
+                    //no bmc
+                    return;
+                }
             }
             IPMIUtil.Account account = IPMIUtil.Account.build(outBand);
             switch (action) {
@@ -70,9 +82,14 @@ public class JobObmNode extends BaseJob {
                     break;
 
                 case "reboot":
-                    IPMIUtil.exeCommand(account, "chassis power off");
-                    Thread.sleep(3000);
-                    IPMIUtil.exeCommand(account, "chassis power on");
+                    String commandResult = IPMIUtil.exeCommand(account, "power status");
+                    if (commandResult.contains(RackHDConstants.PM_POWER_ON) || commandResult.contains("On")) {
+                        IPMIUtil.exeCommand(account, "chassis setbootdev pxe");
+                        IPMIUtil.exeCommand(account, "power reset");
+                    } else if (commandResult.contains(RackHDConstants.PM_POWER_OFF) || commandResult.contains("Off")) {
+                        IPMIUtil.exeCommand(account, "chassis setbootdev pxe");
+                        IPMIUtil.exeCommand(account, "power on");
+                    }
                     break;
 
                 default:

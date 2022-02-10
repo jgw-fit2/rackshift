@@ -1,101 +1,54 @@
 package io.rackshift.dhcpproxy.model;
 
 import com.alibaba.fastjson.JSONObject;
+import io.rackshift.dhcpproxy.mapper.BareMetalMapper;
+import io.rackshift.dhcpproxy.mapper.TaskMapper;
 import io.rackshift.dhcpproxy.util.MySqlUtil;
+import lombok.Data;
 import org.apache.commons.lang.StringUtils;
+import org.apache.ibatis.session.SqlSession;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
+@Data
 public class BareMetal {
     private String id;
     private String pxeMac;
     private String status;
 
-    public String getPxeMac() {
-        return pxeMac;
-    }
-
-    public void setPxeMac(String pxeMac) {
-        this.pxeMac = pxeMac;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public static BareMetal findByMac(String pxeMac) {
-        String sql = "select id,pxe_mac,status from bare_metal where pxe_mac = ?";
-        ResultSet r = MySqlUtil.select(sql, pxeMac);
-        if (r == null) {
-            return null;
-        }
-        try {
-            if (r.next()) {
-                BareMetal bareMetal = new BareMetal();
-                bareMetal.setId(r.getString(1));
-                bareMetal.setPxeMac(r.getString(2));
-                bareMetal.setStatus(r.getString(3));
-                return bareMetal;
-            }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-        return null;
+        SqlSession sqlSession = MySqlUtil.getConn();
+        BareMetalMapper bareMetalMapper = sqlSession.getMapper(BareMetalMapper.class);
+        BareMetal bareMetal = bareMetalMapper.findByMac(pxeMac);
+        sqlSession.close();
+        return bareMetal;
     }
 
     public boolean discovered() {
         if (!this.status.equalsIgnoreCase("onrack") && !this.status.equalsIgnoreCase("discovering")) {
             return true;
         }
-
         return false;
     }
 
     public boolean isRunningTask() {
-        String sql = "select * from task where bare_metal_id = ?";
-        ResultSet r = MySqlUtil.select(sql, id);
-        try {
-            if (r != null && r.next())
-                return true;
-            return false;
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
-        return false;
+        SqlSession sqlSession = MySqlUtil.getConn();
+        TaskMapper taskMapper = sqlSession.getMapper(TaskMapper.class);
+        boolean r = StringUtils.isNotBlank(taskMapper.selectActiveGraphObjectsByBMId(this.id));
+        sqlSession.close();
+        return r;
     }
 
     public boolean isRequestProfile() {
-        String graphObjectStr = null;
-        ResultSet r = MySqlUtil.select("select graph_objects from task where bare_metal_id = ? and status = 'running'", id);
-        try {
-            if (r != null && r.next()) {
-                graphObjectStr = r.getString(1);
-            } else {
-                return false;
-            }
-        } catch (SQLException throwables) {
-            throwables.printStackTrace();
-        }
+        SqlSession sqlSession = MySqlUtil.getConn();
+        TaskMapper taskMapper = sqlSession.getMapper(TaskMapper.class);
+        String graphObjectStr = taskMapper.selectActiveGraphObjectsByBMId(this.id);
+        sqlSession.close();
         if (StringUtils.isNotBlank(graphObjectStr)) {
             JSONObject tasks = JSONObject.parseObject(graphObjectStr);
             boolean shouldProxy = false;
             for (String s : tasks.keySet()) {
                 JSONObject task = tasks.getJSONObject(s);
                 if (task.containsKey("options")) {
-                    if (task.getJSONObject("options").containsKey("profile") && !StringUtils.equals(task.getString("state"), "succeeded") ) {
+                    if (shouldProxy(task)) {
                         shouldProxy = true;
                         break;
                     }
@@ -104,6 +57,28 @@ public class BareMetal {
             return shouldProxy;
         }
 
+        return false;
+    }
+
+    /**
+     * 判断是否应该进入 ipxe
+     * 1. install- 装机工作流相关
+     * 2. bootstrap-rancher
+     *
+     * @param task
+     * @return
+     */
+    private boolean shouldProxy(JSONObject task) {
+        if (task.getJSONObject("options").containsKey("profile")) {
+            if (!StringUtils.equals(task.getString("state"), "succeeded")) {
+                if (task.getString("label").contains("install-")) {
+                    return true;
+                }
+                if (task.getString("taskName").equalsIgnoreCase("Task.Linux.Bootstrap.Rancher")) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 }

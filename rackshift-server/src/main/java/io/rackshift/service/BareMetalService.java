@@ -11,7 +11,10 @@ import io.rackshift.mybatis.mapper.OutBandMapper;
 import io.rackshift.mybatis.mapper.SystemParameterMapper;
 import io.rackshift.strategy.ipmihandler.base.IPMIHandlerDecorator;
 import io.rackshift.strategy.statemachine.LifeStatus;
-import io.rackshift.utils.*;
+import io.rackshift.utils.BeanUtils;
+import io.rackshift.utils.IPMIUtil;
+import io.rackshift.utils.Translator;
+import io.rackshift.utils.UUIDUtil;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 import org.apache.commons.lang3.StringUtils;
@@ -30,10 +33,6 @@ public class BareMetalService {
     private OutBandMapper outBandMapper;
     @Resource
     private IPMIHandlerDecorator ipmiHandlerDecorator;
-    @Resource
-    private RackHDService rackHDService;
-    @Resource
-    private EndpointService endpointService;
     @Resource
     private TaskService taskService;
     @Resource
@@ -96,17 +95,6 @@ public class BareMetalService {
             return false;
         }
         for (String id : ids) {
-            BareMetal bareMetal = bareMetalManager.getBareMetalById(id);
-            if (endpointService.getById(bareMetal.getEndpointId()) != null) {
-                if (StringUtils.isNotBlank(bareMetal.getServerId())) {
-                    try {
-                        rackHDService.cancelWorkflow(bareMetal);
-                        rackHDService.deleteNode(bareMetal);
-                    } catch (Exception e) {
-                        LogUtil.info("删除RackHD节点失败！", ExceptionUtils.getExceptionDetail(e));
-                    }
-                }
-            }
             bareMetalManager.delBareMetalById(id);
             outBandService.delBareMetalById(id);
             taskService.delByBareMetalId(id);
@@ -279,5 +267,31 @@ public class BareMetalService {
 
     public BareMetal getById(String nodeId) {
         return bareMetalManager.getBareMetalById(nodeId);
+    }
+
+    public ResultHolder add(BareMetalDTO request) {
+        if (StringUtils.isBlank(request.getPxeMac())) {
+            return ResultHolder.error("add error! no pxe mac");
+        }
+        request.setId(UUIDUtil.newUUID());
+        request.setStatus(LifeStatus.onrack.name());
+        if (bareMetalManager.getBareMetalByPXEMac(request.getPxeMac()) != null) {
+            return ResultHolder.error("add error! pxe mac :" + request.getPxeMac() + "exists !");
+        }
+        if (bareMetalManager.addToBareMetal(request)) {
+            return ResultHolder.success("");
+        }
+        return ResultHolder.error("opt error");
+    }
+
+    public ResultHolder remark(BareMetalDTO request) {
+        if (StringUtils.isBlank(request.getId())) {
+            return ResultHolder.error(Translator.get("error"));
+        }
+        BareMetal bareMetal = new BareMetal();
+        bareMetal.setId(request.getId());
+        bareMetal.setRemark(request.getRemark());
+        bareMetalManager.updateByPrimaryKeySelective(bareMetal);
+        return ResultHolder.success("");
     }
 }
