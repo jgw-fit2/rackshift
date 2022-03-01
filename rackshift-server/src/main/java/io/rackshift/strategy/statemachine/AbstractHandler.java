@@ -15,6 +15,7 @@ import io.rackshift.service.ExecutionLogService;
 import io.rackshift.service.TaskService;
 import io.rackshift.service.WorkflowService;
 import io.rackshift.utils.ExceptionUtils;
+import io.rackshift.utils.LogUtil;
 import io.rackshift.utils.Translator;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;

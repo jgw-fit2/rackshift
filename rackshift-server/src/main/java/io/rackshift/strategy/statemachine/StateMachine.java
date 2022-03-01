@@ -108,6 +108,7 @@ public class StateMachine {
      * @param messageObj
      */
     public void runTask(JSONObject messageObj) {
+        LogUtil.info("runTask :" + messageObj.toJSONString());
         String taskId = messageObj.getString("taskId");
         String instanceId = messageObj.getString("instanceId");
         if (StringUtils.isAnyBlank(taskId, instanceId)) {
@@ -115,6 +116,7 @@ public class StateMachine {
         }
         TaskWithBLOBs task = taskService.getById(taskId);
         JSONObject graphObject = JSONObject.parseObject(task.getGraphObjects());
+        LogUtil.info("runTask -> graphObject: " + graphObject.toJSONString());
         String runJob = graphObject.getJSONObject(instanceId).getString("runJob");
         if (StringUtils.isNotBlank(runJob)) {
             Class c1 = job.get(runJob);

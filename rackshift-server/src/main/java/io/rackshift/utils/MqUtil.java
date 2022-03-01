@@ -47,6 +47,7 @@ public class MqUtil {
                     String resp = "";
                     try {
                         String msg = new String(body, "UTF-8");
+                        LogUtil.info("MQ subscribe msg: " + msg);
                         resp = (String) callback.apply(msg);
                         LogUtil.info("*** will response to rpc client :" + resp);
                     } catch (Exception ex) {
