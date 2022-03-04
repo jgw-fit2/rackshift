@@ -9,6 +9,7 @@ import io.rackshift.mybatis.mapper.TaskMapper;
 import io.rackshift.service.OutBandService;
 import io.rackshift.utils.IPMIUtil;
 import io.rackshift.utils.JSONUtils;
+import io.rackshift.utils.LogUtil;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationContext;
 
@@ -44,8 +45,10 @@ public class JobLinuxBootstrap extends BaseJob {
 
     @Override
     public void run() {
+        LogUtil.info("Job.Linux.Bootstrap run. bareMetalId:" + bareMetalId);
         JSONObject r = new JSONObject();
         r.put("identifier", bareMetalId);
+        LogUtil.info("Start Request Command");
         this.subscribeForRequestCommand((o) -> {
             JSONArray taskArr = new JSONArray();
             JSONObject cmd = new JSONObject();
@@ -54,9 +57,9 @@ public class JobLinuxBootstrap extends BaseJob {
             r.put("tasks", taskArr);
             return r.toJSONString();
         });
-
+        LogUtil.info("Start Request Profile");
         this.subscribeForRequestProfile(o -> this.options.getString("profile"));
-
+        LogUtil.info("Start Request Options");
         this.subscribeForRequestOptions(o -> JSONUtils.merge(this.options, this.renderOptions).toJSONString());
 
         this.subscribeForCompleteCommands(o -> {

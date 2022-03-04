@@ -9,6 +9,7 @@ import io.rackshift.mybatis.domain.*;
 import io.rackshift.mybatis.mapper.BareMetalMapper;
 import io.rackshift.mybatis.mapper.OutBandMapper;
 import io.rackshift.mybatis.mapper.SystemParameterMapper;
+import io.rackshift.mybatis.mapper.ext.ExtBareMetalMapper;
 import io.rackshift.strategy.ipmihandler.base.IPMIHandlerDecorator;
 import io.rackshift.strategy.statemachine.LifeStatus;
 import io.rackshift.utils.BeanUtils;
@@ -27,6 +28,8 @@ import java.util.*;
 public class BareMetalService {
     @Resource
     private BareMetalManager bareMetalManager;
+    @Resource
+    private ExtBareMetalMapper extBareMetalMapper;
     @Resource
     private BareMetalMapper bareMetalMapper;
     @Resource
@@ -263,6 +266,11 @@ public class BareMetalService {
             return bareMetals.get(0);
         }
         return null;
+    }
+    public BareMetal getByPXEMACFromNetworkCard(String macs) {
+
+        BareMetal bareMetal = extBareMetalMapper.selectByMac(macs);
+        return bareMetal;
     }
 
     public BareMetal getById(String nodeId) {

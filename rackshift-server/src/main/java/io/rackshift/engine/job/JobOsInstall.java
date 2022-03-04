@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import io.rackshift.mybatis.mapper.TaskMapper;
 import io.rackshift.utils.JSONUtils;
+import io.rackshift.utils.LogUtil;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationContext;
 
@@ -43,6 +44,7 @@ public class JobOsInstall extends BaseJob {
 
     @Override
     public void run() {
+        LogUtil.info("Job.Os.Install start run");
         JSONObject r = new JSONObject();
         r.put("identifier", bareMetalId);
         this.subscribeForRequestCommand((o) -> {

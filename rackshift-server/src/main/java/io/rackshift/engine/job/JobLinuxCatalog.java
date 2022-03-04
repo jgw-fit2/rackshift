@@ -11,6 +11,7 @@ import io.rackshift.mybatis.domain.BareMetal;
 import io.rackshift.mybatis.mapper.TaskMapper;
 import io.rackshift.strategy.statemachine.LifeEvent;
 import io.rackshift.utils.JSONUtils;
+import io.rackshift.utils.LogUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationContext;
@@ -49,6 +50,7 @@ public class JobLinuxCatalog extends BaseJob {
 
     @Override
     public void run() {
+        LogUtil.info("Job.Linux.Catalog Start Run.");
         JSONArray cmds = options.getJSONArray("commands");
         JSONObject r = new JSONObject();
         r.put("identifier", bareMetalId);

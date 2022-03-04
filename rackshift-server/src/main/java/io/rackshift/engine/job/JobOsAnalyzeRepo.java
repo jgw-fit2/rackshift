@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import io.rackshift.model.RSException;
 import io.rackshift.mybatis.mapper.TaskMapper;
 import io.rackshift.utils.HttpClientUtil;
+import io.rackshift.utils.LogUtil;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationContext;
 
@@ -40,12 +41,14 @@ public class JobOsAnalyzeRepo extends BaseJob {
 
     @Override
     public void run() {
+        LogUtil.info("Job.Os.Analyze.Repo start run");
         //validate esxi repo
         //download repo/boot.cfg to get cfg args
         String content = "";
         try {
             content = HttpClientUtil.get(options.getString("repo") + "/boot.cfg", null);
             updateAllOptions(getParam(content));
+            LogUtil.info("Job.Os.Analyze.Repo update options success!");
         } catch (Exception e) {
             this.error(RSException.throwExceptions("get esxi repo boot.cfg failed ! either the repo is not valid nor the file formate is not correct!"));
             return;

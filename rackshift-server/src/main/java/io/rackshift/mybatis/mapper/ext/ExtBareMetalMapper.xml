@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.rackshift.mybatis.mapper.ext.ExtBareMetalMapper">
+
+  <select id="selectByMac" parameterType="java.lang.String" resultMap="io.rackshift.mybatis.mapper.BareMetalMapper.BaseResultMap">
+    select *
+    from bare_metal
+    left join network_card
+    on bare_metal.id = network_card.bare_metal_id
+    where network_card.mac = #{mac,jdbcType=VARCHAR}
+  </select>
+</mapper>

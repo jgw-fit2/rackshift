@@ -3,6 +3,7 @@ package io.rackshift.engine.job;
 import com.alibaba.fastjson.JSONObject;
 import io.rackshift.mybatis.mapper.TaskMapper;
 import io.rackshift.strategy.statemachine.LifeEventType;
+import io.rackshift.utils.LogUtil;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationContext;
 
@@ -38,6 +39,7 @@ public class JobAlertNodeDiscovered extends BaseJob {
 
     @Override
     public void run() {
+        LogUtil.info("Job.Alert.Node.Discovered RUN");
         this.complete();
         sendBMLifecycleEvent(LifeEventType.POST_DISCOVERY_WORKFLOW_END);
     }

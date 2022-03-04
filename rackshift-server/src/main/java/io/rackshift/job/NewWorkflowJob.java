@@ -57,7 +57,7 @@ public class NewWorkflowJob {
                 JSONObject body = new JSONObject();
                 body.put("taskId", entry.getValue().get(0).getId());
                 Message message = new Message(body.toJSONString().getBytes(StandardCharsets.UTF_8));
-                LogUtil.info("MqConstants.RUN_TASKGRAPH_QUEUE_NAME: " + message);
+                LogUtil.info("MqConstants.RUN_TASKGRAPH_QUEUE_NAME: " + body.toJSONString());
                 rabbitTemplate.send(MqConstants.RUN_TASKGRAPH_QUEUE_NAME, message);
             }
         }

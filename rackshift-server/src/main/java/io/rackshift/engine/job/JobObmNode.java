@@ -9,6 +9,7 @@ import io.rackshift.mybatis.mapper.CatalogMapper;
 import io.rackshift.mybatis.mapper.TaskMapper;
 import io.rackshift.service.OutBandService;
 import io.rackshift.utils.IPMIUtil;
+import io.rackshift.utils.LogUtil;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationContext;
 
@@ -45,6 +46,7 @@ public class JobObmNode extends BaseJob {
     @Override
     public void run() {
         String action = this.options.getString("action");
+        LogUtil.info("Job.Obm.Node Start: " + action);
         try {
             new OBMService(action).run();
             this.succeeded();

@@ -118,6 +118,7 @@ public class StateMachine {
         JSONObject graphObject = JSONObject.parseObject(task.getGraphObjects());
         LogUtil.info("runTask -> graphObject: " + graphObject.toJSONString());
         String runJob = graphObject.getJSONObject(instanceId).getString("runJob");
+        LogUtil.info("runTask -> runJob: " + runJob);
         if (StringUtils.isNotBlank(runJob)) {
             Class c1 = job.get(runJob);
             if (c1 != null) {

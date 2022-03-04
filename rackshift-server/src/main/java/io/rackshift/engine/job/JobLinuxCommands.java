@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import io.rackshift.model.RSException;
 import io.rackshift.mybatis.mapper.TaskMapper;
 import io.rackshift.utils.JSONUtils;
+import io.rackshift.utils.LogUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.ApplicationContext;
@@ -43,6 +44,7 @@ public class JobLinuxCommands extends BaseJob {
 
     @Override
     public void run() {
+        LogUtil.info("Job.Linux.Commands Start run");
         //支持直接跳过执行命令的子任务提高效率
         if (context.getString("label").equalsIgnoreCase(options.getString("jumpTask"))) {
             JSONObject thisTask = getTaskByInstanceId(instanceId);

@@ -173,8 +173,10 @@ public class ProfileService {
     }
 
     public String getProfileContentByName(Map profileOptionMap) {
-        if (profileOptionMap == null || profileOptionMap.get("profile") == null)
+        if (profileOptionMap == null || profileOptionMap.get("profile") == null){
+            LogUtil.info("echo RackShift: No active task is running !");
             return "echo RackShift: No active task is running !";
+        }
         ProfileExample e = new ProfileExample();
         e.createCriteria().andNameEqualTo((String) profileOptionMap.get("profile"));
         List<Profile> profiles = profileMapper.selectByExampleWithBLOBs(e);
@@ -187,6 +189,7 @@ public class ProfileService {
             else
                 return ejsService.renderWithEjs(profiles.get(0).getContent(), options);
         }
+        LogUtil.info("echo RackShift: No profile is provided !");
         return "echo RackShift: No profile is provided !";
 
     }
