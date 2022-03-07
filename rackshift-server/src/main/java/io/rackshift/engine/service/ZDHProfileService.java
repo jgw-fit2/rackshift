@@ -29,7 +29,6 @@ public class ZDHProfileService {
      */
     public String profiles(String macs) throws IOException, InterruptedException {
         LogUtil.info("查询正在运行中的任务：" + macs);
-        String profileContentByName;
         if (StringUtils.isNotBlank(macs)) {
 
             BareMetal bareMetal = bareMetalService.getByPXEMACFromNetworkCard(macs);
@@ -39,6 +38,7 @@ public class ZDHProfileService {
             }
             return profileService.getProfileContentByName(taskService.getTaskProfile(bareMetal.getId()));
         }
+        LogUtil.info("redirect.ipxe");
         return profileService.getDefaultProfile("redirect.ipxe");
     }
 

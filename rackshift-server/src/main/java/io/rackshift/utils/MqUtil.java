@@ -88,6 +88,7 @@ public class MqUtil {
                     blockQueue.offer(msg);
                     LogUtil.info("**** rpc client reciver response :[" + msg + "]");
                     channel.queueDelete(queueName);
+                    LogUtil.info("queue delete" + queueName);
                     try {
                         channel.close();
                     } catch (TimeoutException e) {

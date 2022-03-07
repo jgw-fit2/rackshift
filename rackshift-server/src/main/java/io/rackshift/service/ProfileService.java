@@ -177,6 +177,7 @@ public class ProfileService {
             LogUtil.info("echo RackShift: No active task is running !");
             return "echo RackShift: No active task is running !";
         }
+        LogUtil.info(" profile:" + profileOptionMap.get("profile"));
         ProfileExample e = new ProfileExample();
         e.createCriteria().andNameEqualTo((String) profileOptionMap.get("profile"));
         List<Profile> profiles = profileMapper.selectByExampleWithBLOBs(e);

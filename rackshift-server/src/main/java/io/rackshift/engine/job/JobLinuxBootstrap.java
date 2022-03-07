@@ -50,6 +50,7 @@ public class JobLinuxBootstrap extends BaseJob {
         r.put("identifier", bareMetalId);
         LogUtil.info("Start Request Command");
         this.subscribeForRequestCommand((o) -> {
+            LogUtil.info("Request Command");
             JSONArray taskArr = new JSONArray();
             JSONObject cmd = new JSONObject();
             cmd.put("cmd", "");
@@ -58,12 +59,19 @@ public class JobLinuxBootstrap extends BaseJob {
             return r.toJSONString();
         });
         LogUtil.info("Start Request Profile");
-        this.subscribeForRequestProfile(o -> this.options.getString("profile"));
+        this.subscribeForRequestProfile(o -> {
+            LogUtil.info("Request Profile");
+            return this.options.getString("profile");
+        });
         LogUtil.info("Start Request Options");
-        this.subscribeForRequestOptions(o -> JSONUtils.merge(this.options, this.renderOptions).toJSONString());
+        this.subscribeForRequestOptions(o -> {
+            LogUtil.info("Request Options");
+            return JSONUtils.merge(this.options, this.renderOptions).toJSONString();
+        });
 
         this.subscribeForCompleteCommands(o -> {
             this.complete();
+            LogUtil.info("Complete Commands");
             return "ok";
         });
     }
