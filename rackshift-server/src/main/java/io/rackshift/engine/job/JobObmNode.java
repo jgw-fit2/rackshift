@@ -80,16 +80,16 @@ public class JobObmNode extends BaseJob {
             IPMIUtil.Account account = IPMIUtil.Account.build(outBand);
             switch (action) {
                 case "setBootPxe":
-                    IPMIUtil.exeCommand(account, "chassis setbootdev pxe");
+                    IPMIUtil.exeCommand(account, "chassis bootdev pxe");
                     break;
 
                 case "reboot":
                     String commandResult = IPMIUtil.exeCommand(account, "power status");
                     if (commandResult.contains(RackHDConstants.PM_POWER_ON) || commandResult.contains("On")) {
-                        IPMIUtil.exeCommand(account, "chassis setbootdev pxe");
+//                        IPMIUtil.exeCommand(account, "chassis bootdev pxe");
                         IPMIUtil.exeCommand(account, "power reset");
                     } else if (commandResult.contains(RackHDConstants.PM_POWER_OFF) || commandResult.contains("Off")) {
-                        IPMIUtil.exeCommand(account, "chassis setbootdev pxe");
+//                        IPMIUtil.exeCommand(account, "chassis bootdev pxe");
                         IPMIUtil.exeCommand(account, "power on");
                     }
                     break;
