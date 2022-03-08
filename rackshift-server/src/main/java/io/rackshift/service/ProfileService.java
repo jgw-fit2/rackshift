@@ -60,7 +60,8 @@ public class ProfileService {
         }
         Profile image = new Profile();
         BeanUtils.copyBean(image, queryVO);
-        if (uploadToServer(queryVO)) {
+        //if (uploadToServer(queryVO)) {    应该没用了，注释
+        if (true) {
             image.setId(UUIDUtil.newUUID());
             profileMapper.insertSelective(image);
             return true;
