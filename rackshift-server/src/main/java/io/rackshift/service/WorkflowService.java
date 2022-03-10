@@ -17,6 +17,7 @@ import io.rackshift.strategy.statemachine.LifeEventType;
 import io.rackshift.strategy.statemachine.StateMachine;
 import io.rackshift.utils.BeanUtils;
 import io.rackshift.utils.Translator;
+import io.rackshift.utils.UUIDUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
@@ -97,6 +98,16 @@ public class WorkflowService {
     public boolean add(WorkflowDTO queryVO) {
         WorkflowWithBLOBs workflow = new WorkflowWithBLOBs();
         BeanUtils.copyBean(workflow, queryVO);
+        if(StringUtils.isBlank(workflow.getId())){
+            workflow.setId(UUIDUtil.newUUID());
+        }
+        if(StringUtils.isBlank(workflow.getTasks())){
+            workflow.setTasks("");
+        }
+        if(StringUtils.isBlank(workflow.getOptions())){
+            workflow.setOptions("");
+        }
+        workflow.setCreateTime(System.currentTimeMillis());
         workflowMapper.insertSelective(workflow);
         return true;
     }

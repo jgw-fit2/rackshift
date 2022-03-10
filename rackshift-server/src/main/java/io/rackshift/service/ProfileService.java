@@ -107,7 +107,9 @@ public class ProfileService {
     }
 
     private ProfileExample buildExample(ProfileDTO queryVO) {
-        return new ProfileExample();
+        ProfileExample example = new ProfileExample();
+        example.setOrderByClause("create_time DESC");
+        return example;
     }
 
     public Profile getById(String id) {
