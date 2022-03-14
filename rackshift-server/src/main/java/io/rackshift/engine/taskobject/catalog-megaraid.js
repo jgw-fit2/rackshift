@@ -12,12 +12,11 @@ module.exports = {
         path: '/opt/MegaRAID/storcli/storcli64',
         commands: [
             'sudo {{options.path}} /c{{ options.adapter }} show all J',
-            'sudo {{options.path}} show ctrlcount J',
-            'sudo {{options.path}} /c{{ options.adapter }} /eall /sall show all J',
-            'sudo {{options.path}} /c{{ options.adapter }} /vall show all J',
             'sudo {{options.path}} /c1 show all J',
             'sudo {{options.path}} show ctrlcount J',
+            'sudo {{options.path}} /c{{ options.adapter }} /eall /sall show all J',
             'sudo {{options.path}} /c1 /eall /sall show all J',
+            'sudo {{options.path}} /c{{ options.adapter }} /vall show all J',
             'sudo {{options.path}} /c1 /vall show all J'
         ]
     },

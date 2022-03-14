@@ -8,12 +8,18 @@ function commandParserFactory(_) {
         dmi = 'sudo dmidecode',
         megaraidControllerCount = 'sudo /opt/MegaRAID/storcli/storcli64 show ctrlcount J',
         megaraidAdapterInfo = 'sudo /opt/MegaRAID/storcli/storcli64 /c0 show all J',
+        megaraidAdapterInfo1 = 'sudo /opt/MegaRAID/storcli/storcli64 /c1 show all J',
         megaraidDriveInfo = 'sudo /opt/MegaRAID/storcli/storcli64 /c0 /eall /sall show all J',
+        megaraidDriveInfo1 = 'sudo /opt/MegaRAID/storcli/storcli64 /c1 /eall /sall show all J',
         megaraidVirtualDiskInfo = 'sudo /opt/MegaRAID/storcli/storcli64 /c0 /vall show all J',
+        megaraidVirtualDiskInfo1 = 'sudo /opt/MegaRAID/storcli/storcli64 /c1 /vall show all J',
         perccliControllerCount = 'sudo /opt/MegaRAID/perccli/perccli64 show ctrlcount J',
         perccliAdapterInfo = 'sudo /opt/MegaRAID/perccli/perccli64 /c0 show all J',
         perccliDriveInfo = 'sudo /opt/MegaRAID/perccli/perccli64 /c0 /eall /sall show all J',
         perccliVirtualDiskInfo = 'sudo /opt/MegaRAID/perccli/perccli64 /c0 /vall show all J',
+        perccliAdapterInfo1 = 'sudo /opt/MegaRAID/perccli/perccli64 /c1 show all J',
+        perccliDriveInfo1 = 'sudo /opt/MegaRAID/perccli/perccli64 /c1 /eall /sall show all J',
+        perccliVirtualDiskInfo1 = 'sudo /opt/MegaRAID/perccli/perccli64 /c1 /vall show all J',
         perccliVersionInfo = 'sudo /opt/MegaRAID/perccli/perccli64 -v',
         adaptecraidAdapterInfo = 'sudo /usr/Arcconf/arcconf getconfig 1 al',
         mpt2fusionAdapterInfo = 'sudo /opt/mpt/mpt2fusion/sas2flash -s -list',
@@ -706,6 +712,21 @@ function commandParserFactory(_) {
             return Promise.resolve({source: 'megaraid-controllers', error: e});
         }
     };
+    CommandParser.prototype[megaraidAdapterInfo1] = function (data) {
+        if (data.error) {
+            return Promise.resolve({source: 'megaraid-controllers-1', error: data.error});
+        }
+        try {
+            var store = true;
+            var parsed = JSON.parse(data.stdout);
+            if (parsed.Controllers[0]['Command Status'].Status === 'Failure') {
+                store = false;
+            }
+            return Promise.resolve({data: parsed, source: 'megaraid-controllers-1', store: store});
+        } catch (e) {
+            return Promise.resolve({source: 'megaraid-controllers-1', error: e});
+        }
+    };
 
     CommandParser.prototype[megaraidAdapterInfo] = function (data) {
         if (data.error) {
@@ -722,7 +743,25 @@ function commandParserFactory(_) {
             return Promise.resolve({source: 'megaraid-controllers', error: e});
         }
     };
-
+    CommandParser.prototype[megaraidVirtualDiskInfo1] = function (data) {
+        if (data.error) {
+            return Promise.resolve({source: 'megaraid-virtual-disks-1', error: data.error});
+        }
+        try {
+            var store = true;
+            var parsed = JSON.parse(data.stdout);
+            if (parsed.Controllers[0]['Command Status'].Status === 'Failure') {
+                store = false;
+            }
+            return Promise.resolve({
+                data: parsed,
+                source: 'megaraid-virtual-disks-1',
+                store: store
+            });
+        } catch (e) {
+            return Promise.resolve({source: 'megaraid-virtual-disks-1', error: e});
+        }
+    };
 
     CommandParser.prototype[megaraidVirtualDiskInfo] = function (data) {
         if (data.error) {
@@ -743,6 +782,26 @@ function commandParserFactory(_) {
             return Promise.resolve({source: 'megaraid-virtual-disks', error: e});
         }
     };
+    CommandParser.prototype[megaraidDriveInfo1] = function (data) {
+        if (data.error) {
+            return Promise.resolve({source: 'megaraid-physical-drives-1', error: data.error});
+        }
+        try {
+            var store = true;
+            var parsed = JSON.parse(data.stdout);
+            if (parsed.Controllers[0]['Command Status'].Status === 'Failure') {
+                store = false;
+            }
+            return Promise.resolve({
+                data: parsed,
+                source: 'megaraid-physical-drives-1',
+                store: store
+            });
+        } catch (e) {
+            return Promise.resolve({source: 'megaraid-physical-drives-1', error: e});
+        }
+    };
+
 
     CommandParser.prototype[megaraidDriveInfo] = function (data) {
         if (data.error) {
@@ -800,9 +859,12 @@ function commandParserFactory(_) {
     };
 
     CommandParser.prototype[perccliDriveInfo] = CommandParser.prototype[megaraidDriveInfo];
+    CommandParser.prototype[perccliDriveInfo1] = CommandParser.prototype[megaraidDriveInfo1];
     CommandParser.prototype[perccliVirtualDiskInfo] =
         CommandParser.prototype[megaraidVirtualDiskInfo];
+    CommandParser.prototype[perccliVirtualDiskInfo1] = CommandParser.prototype[megaraidVirtualDiskInfo1];
     CommandParser.prototype[perccliAdapterInfo] = CommandParser.prototype[megaraidAdapterInfo];
+    CommandParser.prototype[perccliAdapterInfo1] = CommandParser.prototype[megaraidAdapterInfo1];
     CommandParser.prototype[perccliControllerCount] =
         CommandParser.prototype[megaraidControllerCount];
     CommandParser.prototype[mpt2fusionAdapterInfo] = function (data) {

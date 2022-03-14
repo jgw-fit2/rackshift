@@ -36,8 +36,9 @@ public class CatalogParser {
         if (CollectionUtils.isEmpty(disks)) {
             return disks;
         }
-        Map<Long, List<Disk>> diskMap = disks.stream().collect(Collectors.groupingBy(Disk::getSyncTime));
-        return diskMap.get(diskMap.keySet().stream().max(Long::compareTo).orElse(null));
+        return disks;
+//        Map<Long, List<Disk>> diskMap = disks.stream().collect(Collectors.groupingBy(Disk::getSyncTime));
+//        return diskMap.get(diskMap.keySet().stream().max(Long::compareTo).orElse(null));
     }
 
     private List<NetworkCard> getLatestCards(List<NetworkCard> pmNetworkCards) {
@@ -141,6 +142,7 @@ public class CatalogParser {
 
         for (int j = 0; j < catalogsObj.size(); j++) {
             JSONObject catalogObj = catalogsObj.getJSONObject(j);
+            LogUtil.info("信息处理" + catalogObj.getString("source"));
             //序列号等特征
             if ("ipmi-fru".equalsIgnoreCase(catalogObj.getString("source"))) {
                 JSONObject fru = catalogObj.getJSONObject("data");
@@ -284,6 +286,7 @@ public class CatalogParser {
             }
             //dell等使用megaraid卡的机型磁盘
             if ("megaraid-controllers".equalsIgnoreCase(catalogObj.getString("source"))) {
+                LogUtil.info("megaraid-controllers 0");
                 JSONObject diskData = catalogObj.getJSONObject("data");
                 JSONArray controllers = diskData.getJSONArray("Controllers");
 
@@ -308,6 +311,45 @@ public class CatalogParser {
                             pd.setEnclosureId(StringUtils.isBlank(eId) ? 32 : Integer.valueOf(eId));
                             //暂时只支持一块raid卡 所以写死为0
                             pd.setControllerId(0);
+                            pd.setDrive(pdObj.getString("EID:Slt").split(":")[1]);
+                            pd.setRaid(vdMap.get(pdObj.getString("DG")) == null ? null : vdMap.get(pdObj.getString("DG")).getString("TYPE"));
+                            pd.setSize(DiskUtils.getDiskManufactorValue(pdObj.getString("Size")));
+                            pd.setType(pdObj.getString("Intf"));
+                            pd.setVirtualDisk(vdMap.get(pdObj.getString("DG")) == null ? null : vdMap.get(pdObj.getString("DG")).getString("Name"));
+                            pd.setSyncTime(catalogObj.getLong("createTime"));
+
+                            disks.add(pd);
+                        }
+                    }
+                }
+            }
+            //dell等使用megaraid卡的机型磁盘--增加raid 为1 的处理。
+            if ("megaraid-controllers-1".equalsIgnoreCase(catalogObj.getString("source"))) {
+                LogUtil.info("megaraid-controllers 1");
+                JSONObject diskData = catalogObj.getJSONObject("data");
+                JSONArray controllers = diskData.getJSONArray("Controllers");
+
+                for (int k = 0; k < controllers.size(); k++) {
+                    JSONObject conObj = controllers.getJSONObject(k);
+                    if (conObj.containsKey("Response Data")) {
+                        JSONObject pdInfo = conObj.getJSONObject("Response Data");
+                        JSONArray pdList = pdInfo.getJSONArray("PD LIST");
+                        JSONArray vdList = pdInfo.getJSONArray("VD LIST");
+                        // DG / VirtualDisk  0 : VD0 , 1: VD1
+                        Map<String, JSONObject> vdMap = new HashMap<>();
+                        if (CollectionUtils.isNotEmpty(vdList)) {
+                            vdList.forEach(v -> {
+                                vdMap.put(((JSONObject) v).getString("DG/VD").split("/")[0], (JSONObject) v);
+                            });
+                        }
+                        for (int l = 0; l < pdList.size(); l++) {
+                            JSONObject pdObj = pdList.getJSONObject(l);
+                            Disk pd = new Disk();
+                            String eId = pdObj.getString("EID:Slt").split(":")[0];
+                            //有些机型出厂不自带 RAID 卡 而是共用或者拆机使用，这个值获取不到
+                            pd.setEnclosureId(StringUtils.isBlank(eId) ? 32 : Integer.valueOf(eId));
+                            //
+                            pd.setControllerId(1);
                             pd.setDrive(pdObj.getString("EID:Slt").split(":")[1]);
                             pd.setRaid(vdMap.get(pdObj.getString("DG")) == null ? null : vdMap.get(pdObj.getString("DG")).getString("TYPE"));
                             pd.setSize(DiskUtils.getDiskManufactorValue(pdObj.getString("Size")));

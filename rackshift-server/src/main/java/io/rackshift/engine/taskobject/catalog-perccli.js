@@ -11,8 +11,10 @@ module.exports = {
         adapter: '0',
         commands: [
             'sudo /opt/MegaRAID/perccli/perccli64 /c{{ options.adapter }} show all J',
+            'sudo /opt/MegaRAID/perccli/perccli64 /c1 show all J',
             'sudo /opt/MegaRAID/perccli/perccli64 show ctrlcount J',
             'sudo /opt/MegaRAID/perccli/perccli64 /c{{ options.adapter }} /vall show all J',
+            'sudo /opt/MegaRAID/perccli/perccli64 /c1 /vall show all J',
             'sudo /opt/MegaRAID/perccli/perccli64 -v'
         ]
     },
