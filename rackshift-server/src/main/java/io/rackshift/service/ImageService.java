@@ -46,6 +46,19 @@ public class ImageService {
         return true;
     }
 
+    public Object insert(ImageDTO queryVO) {
+        Image image = new Image();
+        BeanUtils.copyBean(image, queryVO);
+        if (StringUtils.isNotBlank(queryVO.getOriginalName())) {
+            Map<String, String> map = mount(queryVO);
+            image.setUrl(map.get("url"));
+            image.setMountPath(map.get("mountPath"));
+            image.setStatus(ServiceConstants.ImageStatusEnum.detected.name());
+        }
+        imageMapper.insertSelective(image);
+        return image;
+    }
+
     public Object update(Image queryVO) {
         Image image = new Image();
         BeanUtils.copyBean(image, queryVO);

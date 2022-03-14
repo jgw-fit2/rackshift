@@ -61,12 +61,24 @@ public class ProfileService {
         Profile image = new Profile();
         BeanUtils.copyBean(image, queryVO);
         //if (uploadToServer(queryVO)) {    应该没用了，注释
-        if (true) {
-            image.setId(UUIDUtil.newUUID());
-            profileMapper.insertSelective(image);
-            return true;
+        image.setId(UUIDUtil.newUUID());
+        profileMapper.insertSelective(image);
+        return true;
+    }
+
+    public Object insert(ProfileDTO queryVO) throws Exception {
+        if (StringUtils.isNotBlank(queryVO.getName())) {
+            ProfileExample e = new ProfileExample();
+            e.createCriteria().andNameEqualTo(queryVO.getName());
+            if (profileMapper.selectByExample(e).size() > 0) {
+                RSException.throwExceptions("Profile already exists!");
+            }
         }
-        return false;
+        Profile image = new Profile();
+        BeanUtils.copyBean(image, queryVO);
+        image.setId(UUIDUtil.newUUID());
+        profileMapper.insertSelective(image);
+        return image;
     }
 
     public Object update(Profile queryVO) throws Exception {

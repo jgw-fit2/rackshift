@@ -38,6 +38,18 @@ public class TemplateController {
         return ResultHolder.success(templateService.add(queryVO));
     }
 
+    /**
+     * 为外部调用提供
+     * @param queryVO
+     * @return
+     * @throws Exception
+     */
+    @RequiresRoles(AuthorizationConstants.ROLE_ADMIN)
+    @PostMapping("insert")
+    public ResultHolder insert(@RequestBody TemplateDTO queryVO) throws Exception {
+        return ResultHolder.success(templateService.insert(queryVO));
+    }
+
     @RequiresRoles(AuthorizationConstants.ROLE_ADMIN)
     @PutMapping("update")
     public ResultHolder update(@RequestBody TemplateDTO queryVO) throws Exception {

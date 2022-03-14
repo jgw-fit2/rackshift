@@ -38,6 +38,19 @@ public class ProfileController {
         return ResultHolder.success(profileService.add(queryVO));
     }
 
+    /**
+     * 为外部系统调用提供
+     *
+     * @param queryVO
+     * @return
+     * @throws Exception
+     */
+    @RequiresRoles(AuthorizationConstants.ROLE_ADMIN)
+    @PostMapping("insert")
+    public ResultHolder insert(@RequestBody ProfileDTO queryVO) throws Exception {
+        return ResultHolder.success(profileService.insert(queryVO));
+    }
+
     @RequiresRoles(AuthorizationConstants.ROLE_ADMIN)
     @PutMapping("update")
     public ResultHolder update(@RequestBody ProfileDTO queryVO) throws Exception {

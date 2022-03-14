@@ -53,6 +53,21 @@ public class TemplateService {
         return true;
     }
 
+    public Object insert(TemplateDTO queryVO) throws Exception {
+        if (StringUtils.isNotBlank(queryVO.getName())) {
+            TemplateExample e = new TemplateExample();
+            e.createCriteria().andNameEqualTo(queryVO.getName());
+            if (templateMapper.selectByExample(e).size() > 0) {
+                RSException.throwExceptions("Template already exists!");
+            }
+        }
+        Template image = new Template();
+        BeanUtils.copyBean(image, queryVO);
+        image.setId(UUIDUtil.newUUID());
+        templateMapper.insertSelective(image);
+        return image;
+    }
+
     public Object update(Template queryVO) throws Exception {
         templateMapper.updateByPrimaryKeySelective(queryVO);
         return true;
