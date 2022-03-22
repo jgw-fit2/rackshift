@@ -39,6 +39,16 @@ public class WorkflowController {
         return workflowService.run(requestDTOs);
     }
 
+    /**
+     * 外部调用执行任务
+     * @param requestDTOs
+     * @return
+     */
+    @PostMapping("/runWorkflow")
+    public ResultHolder runWorkflow(@RequestBody List<WorkflowRequestDTO> requestDTOs) {
+        return workflowService.runWorkflow(requestDTOs);
+    }
+
     @GetMapping("listall")
     public ResultHolder listall() {
         return workflowService.listall();

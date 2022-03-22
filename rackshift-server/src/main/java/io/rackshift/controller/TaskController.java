@@ -62,4 +62,10 @@ public class TaskController {
         return ResultHolder.success(taskService.cancel(ids));
     }
 
+    @RequiresRoles(AuthorizationConstants.ROLE_ADMIN)
+    @PostMapping("query")
+    public ResultHolder queryBySn(@RequestBody TaskDTO queryVO) {
+        return ResultHolder.success(taskService.getTasks(queryVO));
+    }
+
 }

@@ -14,6 +14,7 @@
         <result column="machine_model" jdbcType="VARCHAR" property="machineModel"/>
         <result column="machine_sn" jdbcType="VARCHAR" property="machineSn"/>
         <result column="friendly_name" jdbcType="VARCHAR" property="friendlyName"/>
+        <result column="injectable_name" jdbcType="VARCHAR" property="injectableName"/>
         <result column="params" jdbcType="LONGVARCHAR" property="params"/>
         <result column="extParams" jdbcType="LONGVARCHAR" property="extparams"/>
         <result column="success_count" jdbcType="VARCHAR" property="successCount"/>
@@ -58,4 +59,23 @@
         </if>
     </select>
 
+    <select id="query"  parameterType="io.rackshift.model.TaskDTO" resultMap="BaseResultMap">
+        select
+        task.*,
+        bare_metal.machine_model,
+        bare_metal.machine_sn,
+        workflow.friendly_name,
+        workflow.injectable_name
+        from task
+        left join bare_metal on task.bare_metal_id = bare_metal.id
+        left join workflow on task.work_flow_id = workflow.id
+        <where>
+            bare_metal.machine_sn = #{machineSn}
+            <if test="createTime != null and createTime > 0">
+              and task.create_time >= #{createTime}
+            </if>
+        </where>
+
+        order by task.create_time desc
+    </select>
 </mapper>

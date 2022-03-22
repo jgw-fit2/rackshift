@@ -420,4 +420,10 @@ public class TaskService {
         e.createCriteria().andStatusEqualTo(ServiceConstants.TaskStatusEnum.running.name());
         return taskMapper.selectByExample(e);
     }
+
+    public List<Map> getTasks(TaskDTO taskDTO) {
+        List<Map> list = extTaskMapper.query(taskDTO);
+        return list;
+
+    }
 }

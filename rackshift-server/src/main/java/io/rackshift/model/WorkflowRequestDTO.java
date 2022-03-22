@@ -3,6 +3,7 @@ package io.rackshift.model;
 import com.alibaba.fastjson.JSONObject;
 
 public class WorkflowRequestDTO {
+    private String sn;
     private String bareMetalId;
     private String taskId;
     private String workflowName;
@@ -73,5 +74,13 @@ public class WorkflowRequestDTO {
 
     public void setWorkflowId(String workflowId) {
         this.workflowId = workflowId;
+    }
+
+    public String getSn() {
+        return sn;
+    }
+
+    public void setSn(String sn) {
+        this.sn = sn;
     }
 }

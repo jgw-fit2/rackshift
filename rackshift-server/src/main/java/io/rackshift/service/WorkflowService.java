@@ -3,10 +3,7 @@ package io.rackshift.service;
 import io.rackshift.constants.ServiceConstants;
 import io.rackshift.manager.BareMetalManager;
 import io.rackshift.manager.WorkflowManager;
-import io.rackshift.model.RSException;
-import io.rackshift.model.ResultHolder;
-import io.rackshift.model.WorkflowDTO;
-import io.rackshift.model.WorkflowRequestDTO;
+import io.rackshift.model.*;
 import io.rackshift.mybatis.domain.BareMetal;
 import io.rackshift.mybatis.domain.Workflow;
 import io.rackshift.mybatis.domain.WorkflowExample;
@@ -69,6 +66,16 @@ public class WorkflowService {
         });
 
         return ResultHolder.success("");
+    }
+
+    public ResultHolder runWorkflow(List<WorkflowRequestDTO> requestDTOs) {
+        for(WorkflowRequestDTO requestDTO:requestDTOs){
+            if(StringUtils.isNotBlank(requestDTO.getSn())){
+                String bareId = bareMetalManager.getBareMetalBySn(requestDTO.getSn()).getId();
+                requestDTO.setBareMetalId(bareId);
+            }
+        }
+        return run(requestDTOs);
     }
 
     public ResultHolder postParamsByName(WorkflowRequestDTO requestDTO) {
