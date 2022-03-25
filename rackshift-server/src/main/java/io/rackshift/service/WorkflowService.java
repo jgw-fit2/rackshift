@@ -1,5 +1,6 @@
 package io.rackshift.service;
 
+import com.alibaba.fastjson.JSON;
 import io.rackshift.constants.ServiceConstants;
 import io.rackshift.manager.BareMetalManager;
 import io.rackshift.manager.WorkflowManager;
@@ -13,6 +14,7 @@ import io.rackshift.strategy.statemachine.LifeEvent;
 import io.rackshift.strategy.statemachine.LifeEventType;
 import io.rackshift.strategy.statemachine.StateMachine;
 import io.rackshift.utils.BeanUtils;
+import io.rackshift.utils.LogUtil;
 import io.rackshift.utils.Translator;
 import io.rackshift.utils.UUIDUtil;
 import org.apache.commons.lang3.StringUtils;
@@ -75,6 +77,7 @@ public class WorkflowService {
                 requestDTO.setBareMetalId(bareId);
             }
         }
+        LogUtil.info("Task  Request: \n" + JSON.toJSONString(requestDTOs));
         return run(requestDTOs);
     }
 

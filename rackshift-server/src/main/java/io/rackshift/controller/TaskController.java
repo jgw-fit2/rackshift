@@ -63,9 +63,9 @@ public class TaskController {
     }
 
     @RequiresRoles(AuthorizationConstants.ROLE_ADMIN)
-    @PostMapping("query")
-    public ResultHolder queryBySn(@RequestBody TaskDTO queryVO) {
-        return ResultHolder.success(taskService.getTasks(queryVO));
+    @GetMapping("query/{id}")
+    public ResultHolder queryById(@PathVariable String id) {
+        return ResultHolder.success(taskService.getTaskById(id));
     }
 
 }

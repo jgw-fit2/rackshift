@@ -128,7 +128,12 @@ public class TaskService {
             List<TaskWithBLOBs> list = new ArrayList();
             entry.getValue().forEach(e -> {
                 TaskWithBLOBs task = new TaskWithBLOBs();
-                task.setId(UUIDUtil.newUUID());
+                if(null != e.getWorkflowRequestDTO().getTaskId() ){
+                    task.setId(e.getWorkflowRequestDTO().getTaskId());
+                }else{
+                    task.setId(UUIDUtil.newUUID());
+                }
+
                 task.setBareMetalId(entry.getKey());
                 task.setWorkFlowId(e.getWorkflowRequestDTO().getWorkflowId());
                 task.setUserId(SessionUtil.getUser().getId());
@@ -421,9 +426,7 @@ public class TaskService {
         return taskMapper.selectByExample(e);
     }
 
-    public List<Map> getTasks(TaskDTO taskDTO) {
-        List<Map> list = extTaskMapper.query(taskDTO);
-        return list;
-
+    public TaskWithBLOBs getTaskById(String id) {
+        return taskMapper.selectByPrimaryKey(id);
     }
 }
