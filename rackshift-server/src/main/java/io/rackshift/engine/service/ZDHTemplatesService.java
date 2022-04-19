@@ -7,6 +7,7 @@ import io.rackshift.mybatis.domain.BareMetal;
 import io.rackshift.mybatis.domain.Template;
 import io.rackshift.service.BareMetalService;
 import io.rackshift.service.TemplateService;
+import io.rackshift.utils.LogUtil;
 import io.rackshift.utils.MqUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -36,11 +37,14 @@ public class ZDHTemplatesService {
         }
         if (StringUtils.isNotBlank(nodeId)) {
             String optionStr = MqUtil.request(MqConstants.EXCHANGE_NAME, MqConstants.MQ_ROUTINGKEY_OPTIONS + nodeId, "");
+            LogUtil.info("getTemplateName: " + optionStr);
             if (StringUtils.isNotBlank(optionStr)) {
                 JSONObject param = JSONObject.parseObject(optionStr);
                 param.put("macaddress", bareMetalService.getById(nodeId).getPxeMac());
                 param.put("identifier", nodeId);
-                return ejsService.renderWithEjs(template.getContent(), param);
+                String content = ejsService.renderWithEjs(template.getContent(), param);
+                LogUtil.info("content: " + content);
+                return content;
             }
         }
         return template.getContent();
